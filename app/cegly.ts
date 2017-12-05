@@ -56,7 +56,7 @@ class Rect {
 
     moveBottomTo(bottom: number) {
         this.topLeft.y = bottom - this.height();
-        this.bottomRight.y = bottom;
+        this.bottomRight.y = bottom; 
     }
 
     width() {
@@ -90,7 +90,7 @@ enum Side {
     None,
     Left,
     Top,
-    Right,
+    Right, 
     Bottom
 }
 
@@ -136,18 +136,18 @@ class Sprite extends Obstacle {
         let {x: posX, y: posY} = this.topLeft;
 
 	    this.sprite.style.left = posX + 'px';
-        this.sprite.style.top = posY + 'px';
+        this.sprite.style.top = posY + 'px';         
     }
 
     hide() {
         this.sprite.style.display = 'none';
         this.isVisible = false;
-    }
+    }    
 
     show() {
         this.sprite.style.display = 'block';
         this.isVisible = true;
-    }
+    }    
 
     checkCollision(anotherRect : Rect) : Side {
         if (!this.isVisible) {
@@ -173,14 +173,14 @@ class Ball extends Sprite {
         super(sprite, sprite.offsetLeft, sprite.offsetTop, sprite.offsetLeft + 2 * radius, sprite.offsetTop + 2 * radius);
         this.sprite = sprite;
         this.radius = radius;
-        this.velocity = 5;
-        this.dir = dir;
+        this.velocity = 5;        
+        this.dir = dir;        
     }
 
     calculateNewPosition() : Rect {
         var newPosition = this.clone();
         newPosition.add(this.dir);
-        return newPosition;
+        return newPosition;        
     }
 
     bounceHorizontal() {
@@ -189,7 +189,7 @@ class Ball extends Sprite {
 
     bounceVertical() {
         this.dir.flipX();
-    }
+    } 
 
     bounceWithAngle(angle: number) {
         angle = angle * (Math.PI / 180);
@@ -227,41 +227,27 @@ class Paddle extends Sprite {
         var minPaddle = -ballRadius;
         var paddleRange = maxPaddle - minPaddle;
 
-        var minAngle = 160;
-        var maxAngle = 20;
+        var minAngle = 135;
+        var maxAngle = 45;
         var angleRange = maxAngle - minAngle;
 
         return ((hitSpot * angleRange) / paddleRange) + minAngle;
     }
 }
 
-interface BricHitsAndScore {
-    score: number;
-    hits: boolean;
-}
-
 class Brick extends Sprite {
-    public score = 20;
-    public hits = 0;
 
-    wasHit(): BricHitsAndScore {
-        return {
-            hits: ++this.hits === 1,
-            score: this.score
-        }
-    }
 }
 
 class HardBrick extends Brick {
-    public score = 20;
-    public hits = 0;
+	
+	hitCount: number;
+	
+	constructor(harBrick: HTMLElement){
+		super(harBrick)
+		this.hitCount = 0;
+	}
 
-    wasHit(): BricHitsAndScore {
-        return {
-            hits: ++this.hits === 2,
-            score: this.score * this.hits
-        }
-    }
 }
 
 enum GameState {
@@ -280,33 +266,34 @@ class Game {
     ball: Ball;
     paddle: Paddle;
     bricks: Array<Brick> = [];
+    hardBricks: Array<HardBrick> = [];
 
     keyMap = {};
 
     wallLeft : Obstacle;
     wallTop: Obstacle;
     wallRight: Obstacle;
-    wallBottom: Obstacle;
+    wallBottom: Obstacle;    
 
     livesLeft : number;
     score: number;
 
-    constructor(ballElement : HTMLElement, paddle: HTMLElement, bricks: HTMLCollection, boardElement : HTMLElement, public livesLabel : HTMLElement, public scoreLabel: HTMLElement, public newGameBtn: HTMLElement) {
+    constructor(ballElement : HTMLElement, paddle: HTMLElement, bricks: HTMLCollection, hardBricks: HTMLCollection, boardElement : HTMLElement, public livesLabel : HTMLElement,
+        public scoreLabel: HTMLElement, public newGameBtn: HTMLElement) {
         this.gameState = GameState.Running;
         this.paddle = new Paddle(paddle, boardElement.offsetWidth);
 
         this.ball = new Ball(
-            ballElement,
-            new Vector(3, -3)
+            ballElement,            
+            new Vector(3, -3) 
         );
 
         for (let i = 0; i < bricks.length; i++) {
-            if(this.getRandomNumber()) {
-                this.bricks.push(new HardBrick(<HTMLElement>bricks[i]));
-                this.bricks[i].sprite.style.backgroundColor = "red";
-            }else {
-                this.bricks.push(new Brick(<HTMLElement>bricks[i]));
-            }
+            this.bricks.push(new Brick(<HTMLElement>bricks[i]));
+        }
+		
+		for (let i = 0; i < hardBricks.length; i++) {
+            this.hardBricks.push(new HardBrick(<HTMLElement>hardBricks[i]));
         }
 
         this.createWalls(this.ball.radius, boardElement.offsetWidth, boardElement.offsetHeight);
@@ -314,19 +301,13 @@ class Game {
         this.newGame();
 
         this.newGameBtn.addEventListener('click', () => this.newGame());
-    }
-
-    getRandomNumber(): boolean {
-            let procent : number = 75;
-            let randomNumber : number = Math.floor(Math.random() * 100);
-            return (randomNumber >= procent);
-    }
+    }    
 
     createWalls(radius : number, maxX : number, maxY : number) {
         this.wallLeft = new Obstacle(-radius, -radius, 0, maxY + radius);
         this.wallTop = new Obstacle(-radius, -radius, maxX + radius, 0);
         this.wallRight = new Obstacle(maxX, -radius, maxX + radius, maxY + radius);
-        this.wallBottom = new Obstacle(-radius, maxY, maxX + radius, maxY + radius);
+        this.wallBottom = new Obstacle(-radius, maxY, maxX + radius, maxY + radius);        
     }
 
     newGame() {
@@ -354,8 +335,8 @@ class Game {
             this.ball.moveTo(ballPosition);
         } else {
             this.gameState = GameState.GameOver;
-            this.ball.hide();
-            this.newGameBtn.style.display = 'block';
+            this.ball.hide();          
+            this.newGameBtn.style.display = 'block';  
         }
         this.livesLabel.innerText = '' + this.livesLeft;
     }
@@ -363,6 +344,11 @@ class Game {
     run() {
         document.addEventListener('keyup', (e) => this.keyMap[e.keyCode] = false);
         document.addEventListener('keydown', (e) => this.keyMap[e.keyCode] = true);
+		
+		for (let hBrick of this.hardBricks) {
+			console.log(hBrick)
+			
+		}
 
        setInterval(() => {
             if (this.gameState !== GameState.Running) {
@@ -386,7 +372,7 @@ class Game {
             }
             if (this.wallTop.checkCollision(newBallPosition)) {
                 this.ball.bounceHorizontal();
-            }
+            }     
 
             for (let brick of this.bricks) {
                 let wasHit = false;
@@ -399,18 +385,61 @@ class Game {
                         break;
 
                     case (Side.Top):
-                    case (Side.Bottom):
+                    case (Side.Bottom):                    
                         this.ball.bounceHorizontal();
                         wasHit = true;
                 }
 
                 if (wasHit) {
-                    let { score, hits }: BricHitsAndScore = brick.wasHit();
-                    this.score += score;
+                    brick.hide();
+                    this.score += 20;
                     this.scoreLabel.innerText = '' + this.score;
-                    if (hits){
-                        brick.hide();
-                    }
+                    break;
+                }
+            }
+			
+			for (let hBrick of this.hardBricks) {
+	
+				
+
+                switch (hBrick.checkCollision(newBallPosition)) {
+					
+                    case (Side.Left):
+						this.ball.bounceVertical();
+						this.score += 20;
+                        hBrick.hitCount++;
+                        break;
+						
+                    case (Side.Right):
+                        this.ball.bounceVertical();
+						this.score += 20;
+                        hBrick.hitCount++;
+                        break;
+
+                    case (Side.Top):
+						this.ball.bounceHorizontal();
+						this.score += 20;
+                        hBrick.hitCount++;
+						break
+						
+                    case (Side.Bottom):                    
+                        this.ball.bounceHorizontal();
+						this.score += 20;
+                        hBrick.hitCount++;
+						break
+
+                }
+
+                if (hBrick.hitCount === 1) {
+                    hBrick.sprite.style.opacity = "0.5";
+					this.scoreLabel.innerText = '' + this.score;
+                    break;
+				}	
+				
+				if (hBrick.hitCount === 2) {
+					hBrick.hide()
+                    
+                    this.scoreLabel.innerText = '' + this.score;
                     break;
                 }
             }
@@ -420,7 +449,7 @@ class Game {
             }
 
             this.ball.moveTo(this.ball.calculateNewPosition());
-       }, this.loopInterval)
+       }, this.loopInterval) 
     }
 }
 
@@ -430,10 +459,11 @@ var game = new Game(
     <HTMLElement>document.getElementsByClassName("ball")[0],
     <HTMLElement>document.getElementsByClassName("paddle")[0],
     <HTMLCollection>document.getElementsByClassName("brick"),
+    <HTMLCollection>document.getElementsByClassName("hard-brick"),
     <HTMLElement>document.getElementsByClassName("game-board")[0],
     <HTMLElement>document.getElementById('lives'),
     <HTMLElement>document.getElementById('score'),
-    <HTMLElement>document.getElementById('newGame')
+    <HTMLElement>document.getElementById('newGame')    
 );
 
 game.run();
